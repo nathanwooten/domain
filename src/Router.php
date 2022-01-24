@@ -173,7 +173,7 @@ class Router {
 			Functions::handle( $e, 1 );
 		}
 
-		$this->result[] = $response = $callback( ...$args );
+		$response = App::call( $callback, $args );
 
 		return $response;
 
