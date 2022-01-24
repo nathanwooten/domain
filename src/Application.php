@@ -54,7 +54,11 @@ class Application
 	public function run()
 	{
 
+		$args = func_get_args();
+
 		$chain = [
+
+
 			'config' => [
 				[ $this, 'getConfig' ],
 				'out' => [
@@ -101,26 +105,33 @@ class Application
 				],
 				'break' => true
 			],
-			''
+
+
+			'call' => [
+				[ 'router', 'call' ],
+				'in' => $args,
+			]
+
+
 		]];
 
 		$chainResult = $this->callChain( $chain );
 
 		/** end collect **/
 
-		$chainResult = $this->callChain( $chainResult[ 'chain' ], $chainResult[ 'vars' ], $chainResult[ 'result' ] );
+		$chainResult = $this->callChain( $chainResult[ 'chain' ], $chainResult[ 'defined' ], [], $chainResult[ 'result' ], $chain );
 
 		/** end find **/
 
-		$chainResult = $this->callChain( $chainResult[ 'chain' ], $chainResult[ 'vars' ], $chainResult[ 'result' ] );
-		if ( static::isError( $chainResult[ 'result' ] ) ) {
-			throw new Exception( 'Method call in chain returned an error' );
-		}
+		$chainResult = $this->callChain( $chainResult[ 'chain' ], $chainResult[ 'defined' ], [], $chainResult[ 'result' ], $chain );
+
 		if ( is_string( $chainResult[ 'result' ] ) ) {
 			$response = $chainResult[ 'result' ];
 
 			print $response;
 		}
+
+		throw new Exception( 'Did not get a valid final response, expecting a string ( template ) to print' );
 
 	}
 
@@ -177,7 +188,7 @@ class Application
 						if ( is_array( $var ) ) {
 							$innerChain = $var;
 
-							$in[ $key ] = $this->callChain( static::getDefinedIn( get_defined_vars() ) );
+							$in[ $key ] = $this->callChain( ...array_values( static::getDefinedIn( get_defined_vars() ) ) );
 
 							continue;
 						}
@@ -336,11 +347,16 @@ class Application
 	public static function resultInOutOther( $vars, $var )
 	{
 
-		if ( ! isset( $vars[ $var ] ) && ! static::$allow_null ) {
-			throw new Exception( sprintf( 'Missing out, %s', $var ) );
+		if ( ! isset( $vars[ $var ] ) ) {
+			if ( ! static::$allow_null ) {
+				throw new Exception( sprintf( 'Missing out, %s', $var ) );
+			}
+			$result = null;
+		} else {
+			$result = $vars[ $var ];
 		}
 
-		if ( ! static::hasResult( $vars[ $var ] ) ) {
+		if ( ! static::hasResult( $result ) ) {
 			throw new Exception( sprintf( 'Missing out, "result"' ) );
 		}
 
@@ -357,8 +373,6 @@ class Application
 		return true;
 
 	}
-
-
 
 	public function routes( array $routes = [] )
 	{
