@@ -5,7 +5,7 @@ namespace nathanwooten\Application;
 class CallableResolver
 {
 
-	public function resolve( $callback, $constructorArgs = [] )
+	public static function resolve( $callback, $constructorArgs = [] )
 	{
 
 		if ( is_array( $callback ) ) {
@@ -28,7 +28,7 @@ class CallableResolver
 	}
 
 
-	public function getCallbackName( $callback )
+	public static function getName( $callback )
 	{
 
 		$name = '';

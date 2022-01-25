@@ -45,14 +45,16 @@ class Application
 	public function __construct( Config $config )
 	{
 
-		Registry::set( 'application', $this );
+		Registry::set( 'Application', $this );
 
 		$this->config = $config;
 
 	}
 
-	public function run( $callback, array $args = null, array $events = null )
+	public function run( $callback = null, array $args = null )
 	{
+
+		if ( is_null( $args ) ) $args = [];
 
 		if ( is_callable( $callback ) ) {
 			$callable = $callback;
@@ -67,119 +69,99 @@ class Application
 		} elseif ( is_array( $callback ) ) {
 			$chain = $callback;
 
-
-
-
 		} else {
 
 			$chain = [
 
-
-			'config' => [
-				[ $this, 'getConfig' ],
-				'out' => [
-					'config'
-				]
-			],
-			'router' => [
-				[ 'config', 'getRouter' ],
-				'out' => [
-					'router',
-					[ $this, 'router' ]
-				]
-			],
-			'request' => [
-				[ 'config', 'getRequest' ],
-				'out' => [
-					'request',
-					[ $this, 'request' ]
-				]
-			],
-			'routes' => [
-				[ 'config', 'getRoutes' ],
-				'out' => [
-					'routes'
-				],
-				'break' => true
-			],
-
-
-			'find' => [
-				[ 'router', 'route' ],
-				'in' => [
-					'request',
-					[ 'appRoutes' => [
-						[ $this, 'routes' ],
-						'in' => [
-							'routes'
-						],
-						'out' => [
-							'result'
-						]
+				'config' => [
+					[ $this, 'getConfig' ],
+					'out' => [
+						'config'
 					]
 				],
-				'out' => [
-					'route'
+				'router' => [
+					[ 'config', 'getRouter' ],
+					'out' => [
+						'router',
+						[ $this, 'router' ]
+					]
 				],
-				'break' => true
-			],
+				'request' => [
+					[ 'config', 'getRequest' ],
+					'out' => [
+						'request',
+						[ $this, 'request' ]
+					]
+				],
+				'routes' => [
+					[ 'config', 'getRoutes' ],
+					'out' => [
+						'routes'
+					],
+					'break' => true
+				],
+
+				'find' => [
+					[ 'router', 'route' ],
+					'in' => [
+						'request',
+						[ 'appRoutes' => [
+							[ $this, 'routes' ],
+							'in' => [
+								'routes'
+							],
+							'out' => [
+								'result'
+							]
+						]
+					],
+					'out' => [
+						'route'
+					],
+					'break' => true
+				],
 
 
-			'call' => [
-				[ 'router', 'call' ],
-				'in' => $args,
-			]
+				'call' => [
+					[ 'router', 'call' ],
+					'in' => $args,
+				]
 
+			];
 
-		]];
+		}
 
-		$chainResult = $this->callChain( $chain, [], [], null, $chain );
+		$chainResult = $this->callChain( $chain, [], $args, null, $chain );
+		while ( $chainResult[ 'chain' ] ) {
 
-		/** end collect **/
+			$chainResult = static::callChain( ...array_values( static::getDefinedIn( $chainResult ) ) );
 
-		$chainResult = $this->callChain( $chainResult[ 'chain' ], $chainResult[ 'defined' ], [], $chainResult[ 'result' ], $chain );
+			if ( isset( $chainResult[ 'defined' ][ 'break' ] ) && is_string( $chainResult[ 'defined' ][ 'break' ] ) ) {
 
-		/** end find **/
-
-		$chainResult = $this->callChain( $chainResult[ 'chain' ], $chainResult[ 'defined' ], [], $chainResult[ 'result' ], $chain );
-
-		if ( is_string( $chainResult[ 'result' ] ) ) {
-			$response = $chainResult[ 'result' ];
+				$eventName = $chainResult[ 'defined' ][ 'break' ];
+				$this->event( $eventName );
+			}
+		}
+var_dump( $chainResult );
+		$response = $this->chainResult( $chainResult );
+		if ( is_string ( $resonse ) ) {
 
 			print $response;
+
+			return $this;
 		}
 
 		throw new Exception( 'Did not get a valid final response, expecting a string ( template ) to print' );
 
 	}
 
-//		$config = $this->getConfig();
-//		$this->router = $router = $config->getRouter();
-//		$this->request = $request = $config->getRequest();
-//		$routes = $config->routes();
-//		try {
-//			$route = $router->route( $request, ...$this->routes( $routes ) );
-//			if ( ! $route ) {
-//				throw new Exception( 'Could not find a matching route' );
-//			}
-//			$result = $router->call( $route );
-//			if ( ! $result ) {
-//				throw new Exception( sprintf( 'Unusable result from route call, named \'%s\'', $route->getParameter( 'pattern' ) ) );
-//			}
-//		} catch ( Exception $e ) {
-//			$this->handle( $e, static::$handle );
-//		}
-//		if ( is_string( $result ) ) {
-//			print $result;
-//		}
-
-	public function callChain( $chain, $definedVars = [], $vars = [], array $theChain = null )
+	public function callChain( array $chain, array $definedVars = [], array $vars = [], $result = null, array $thisOldChain = null )
 	{
 
 		$defined = $this->getDefinedVars( $definedVars, $vars );
 		extract( $defined );
 
-		$theChain = isset( $theChain ) ? $theChain : $chain;
+		$thisOldChain = isset( $theOldChain ) ? $thisOldChain : $chain;
 
 		try {
 
@@ -252,6 +234,17 @@ class Application
 
 	}
 
+	public function chainResult( $chainResult )
+	{
+
+		if ( isset( $chainResult[ 'result' ] ) ) {
+			return $chainResult[ 'result' ];
+		}
+
+		throw new Exception( 'Unset result property in chainResult' );
+
+	}
+
 	public static function call( $callable, $args = [] )
 	{
 
@@ -300,6 +293,28 @@ class Application
 
 	}
 
+	public function event( $eventName = null )
+	{
+
+		if ( ! is_null( $eventName ) && is_string( $eventName ) ) {
+
+			$eventManager = static::getEventManager();
+
+			try {
+				if ( $eventManager->has( $eventName ) ) {
+
+					$eventManager->dispatch( $eventName );
+				}
+			} catch( Exception $e ) {
+
+				return $this->handle( $e );
+			}
+		}
+
+		return true;
+
+	}
+
 	public static function getDefinedVars( $vars = [], $add = [] )
 	{
 
@@ -317,7 +332,7 @@ class Application
 
 		$hasOther = [ 'result' => 'resultInOutOther' ];
 
-		$input = [ 'chain', 'defined', 'vars', 'result', 'theChain' ];
+		$input = [ 'chain', 'defined', 'vars', 'result', 'thisOldChain' ];
 
 		foreach ( $input as $var ) {
 
@@ -344,7 +359,7 @@ class Application
 
 		$hasOther = [ 'result' => 'resultInOutOther' ];
 
-		$output = [ 'chain', 'defined', 'result', 'theChain' ];
+		$output = [ 'chain', 'defined', 'result', 'thisOldChain' ];
 
 		try {
 
@@ -464,10 +479,17 @@ class Application
 
 	}
 
+	public function getEventManager()
+	{
+
+		return static::getConfig()->get( 'getEventManager' );
+
+	}
+
 	public static function getConfig()
 	{
 
-		$config = Registry::get( 'application' )->config;
+		$config = Registry::get( 'Application' )->config;
 
 		return $config;
 
@@ -476,7 +498,7 @@ class Application
 	public static function getFunctions()
 	{
 
-		$functionsObject = static::getConfig()->getFunctions();
+		$functions = Registry::get( 'Functions' );
 
 		return $functionsObject;
 
