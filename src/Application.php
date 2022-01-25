@@ -51,12 +51,28 @@ class Application
 
 	}
 
-	public function run()
+	public function run( $callback, array $args = null, array $events = null )
 	{
 
-		$args = func_get_args();
+		if ( is_callable( $callback ) ) {
+			$callable = $callback;
 
-		$chain = [
+			$chain = [
+				CallableResolver::getName( $callable ) => [
+					$callable,
+					'out' => 'response'
+				]
+			];
+
+		} elseif ( is_array( $callback ) ) {
+			$chain = $callback;
+
+
+
+
+		} else {
+
+			$chain = [
 
 
 			'config' => [
@@ -86,6 +102,8 @@ class Application
 				],
 				'break' => true
 			],
+
+
 			'find' => [
 				[ 'router', 'route' ],
 				'in' => [
@@ -115,7 +133,7 @@ class Application
 
 		]];
 
-		$chainResult = $this->callChain( $chain );
+		$chainResult = $this->callChain( $chain, [], [], null, $chain );
 
 		/** end collect **/
 
@@ -168,7 +186,6 @@ class Application
 			reset( $chain );
 			while ( $chain ) {
 
-				$name = key( $chain );
 				$current = array_shift( $chain );
 
 				$callable = $current[0];
@@ -180,7 +197,11 @@ class Application
 					foreach ( $current[ 'in' ] as $key => $var ) {
 
 						if ( is_string( $var ) ) {
-							$in[ $key ] = ${$var};
+							if ( isset( ${$var} ) ) {
+								$in[ $key ] = ${$var};
+							} else {
+								$in[ $key ] = null;
+							}
 
 							continue;
 						}
@@ -200,7 +221,7 @@ class Application
 				if ( isset( $current[ 'out' ] ) ) {
 					foreach ( $current[ 'out' ] as $var ) {
 
-						if ( is_array( $var ) && is_object( $var[0] ) && is_string( $var[1] ) ) {
+						if ( is_array( $var ) && ( is_object( $var[0] || is_string( $var[0] ) && $var[0] = new $var[0] ) ) && is_string( $var[1] ) ) {
 							$var[0]->{$var[1]} = $result;
 
 						} elseif ( is_string( $var ) ) {
@@ -325,22 +346,40 @@ class Application
 
 		$output = [ 'chain', 'defined', 'result', 'theChain' ];
 
-		foreach ( $output as $var ) {
+		try {
 
-			if ( array_key_exists( $var, $hasOther ) ) {
+			foreach ( $output as $var ) {
 
-				static::{$hasOther[ $var ]}( $vars, $var );
-				continue;
+				if ( array_key_exists( $var, $hasOther ) ) {
+
+					if ( static::{$hasOther[ $var ]}( $vars, $var ) ) {
+						$value = $vars[ $var ];
+					} else {
+						$value = null;
+					}
+
+					$outs[ $var ] = $value;
+
+					continue;
+				}
+
+				if ( ! isset( $vars[ $var ] ) ) {
+					throw new Exception( 'Please provide ' . implode( ', ', $output ) . ' keys to the input' );
+				}
+
+				$outs[ $var ] = $vars[ $var ];
 			}
 
-			if ( ! isset( $vars[ $var ] ) ) {
-				throw new Exception( 'Please provide ' . implode( ', ', $output ) . ' keys to the input' );
-			}
+			return $outs;
 
-			$outs[ $var ] = $vars[ $var ];
+		} catch( Exception $e ) {
+
+			$outs = $e;
+
+		} finally {
+
+			return $outs;
 		}
-
-		return $outs;
 
 	}
 
