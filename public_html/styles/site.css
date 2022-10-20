@@ -1,0 +1,16 @@
+body {
+  background-image: url( ../images/bg-orange.png );
+  background-repeat: repeat-x;
+}
+#article {
+  width: 66.66%;
+}
+#header {
+  width: 33.33%;
+}
+#site {
+  background-image: url( ../images/photo-1591369839359-e1e548de744e.png );
+  border-bottom: 1px solid #951;
+  height: 200px;
+}
+

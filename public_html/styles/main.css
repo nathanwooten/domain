@@ -1,0 +1,20 @@
+* {
+  box-sizing: border-box;
+}
+html, body {
+  font-size: medium;
+  height: 100%;
+}
+body {
+  font-family: Verdana,Arial,san-serif;
+  margin: 0;
+}
+ul {
+  list-style-position: inside;
+}
+.display-none {
+  display: none;
+}
+.bold, .strong {
+  font-weight: bold;
+}
