@@ -1,0 +1,13 @@
+
+    Autoloader::class,
+    [
+      'loader'
+    ],
+    null,
+    [
+      'nathanwooten\Loader',
+      'Loader' . DIRECTORY_SEPARATOR . 'src',
+      LIB_PATH . 'nathanwooten'
+    ]
+  ]
+];
