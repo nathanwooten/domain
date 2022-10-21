@@ -1,0 +1,14 @@
+{
+  "name": "nathanwooten/autoloader",
+  "description": "Professional PSR Autoloader",
+  "license": "MIT",
+  "require": {
+    "php": ">=7.0"
+  },
+  "authors": [
+    {
+      "name": "Nathan Wooten",
+      "homepage": "https://github.com/nathanwooten/Autoloader"
+    }
+  ]
+}

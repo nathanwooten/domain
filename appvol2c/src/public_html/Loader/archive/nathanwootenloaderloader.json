@@ -1,0 +1,24 @@
+{
+  "loads": [
+   [
+    "id": "Autoloader::class",
+    "properties": [
+      "autoloader",
+      "loader"
+    ],
+    "callback": "load",
+    "args": [
+      "string": "nathanwooten\Loader",
+      "string": "Loader/src",
+    ]
+  ],
+  
+   "Loader::class": [
+      'loader',
+      'autoloader'
+    ],
+    'load',
+    [
+      'string' =>     
+
+];
