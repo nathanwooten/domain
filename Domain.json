@@ -4,8 +4,5 @@
     "email": "a8gid24akl@gmail.com",
     "homepage": "https://www.nathanwooten.net/",
     "role": "Developer"
-  },
-  "require": {
-    "doctrine/collections": "2.0.1"
   }
 }
