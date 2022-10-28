@@ -5,12 +5,28 @@ namespace SomeVendor\SomeType;
 class SomeClass
 {
 
-  public function __construct( $name, $phone, $email )
+  public $name;
+  public $email;
+
+  public function __construct( $name, $email )
   {
 
     $this->name = $name;
-    $this->phone = $phone;
     $this->email = $email;
+
+  }
+
+  public function getName()
+  {
+
+    return $this->name;
+
+  }
+
+  public function getEmail()
+  {
+
+    return $this->email;
 
   }
 
