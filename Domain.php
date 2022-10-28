@@ -3,6 +3,9 @@
 namespace Domain;
 
 use Exception;
+use ReflectionClass;
+use ReflectionMethod;
+use StdClass;
 
 use Domain\{
 
@@ -21,9 +24,9 @@ class Domain
 
   protected string $path;
   protected DomainCollection $domain;
-  protected array $basespace = [];
+
+  protected array $spaces = [];
   protected array $services = [];
-  protected array $tags = [];
 
   protected function __construct()
   {
@@ -46,21 +49,49 @@ class Domain
 
   }
 
+  public function add( $basespace, $directory = null )
+  {
+
+    if ( is_null( $directory ) ) $directory = $this->getPath();
+
+    $this->spaces[] = [ $basespace, $directory ];
+
+  }
+
+  public function match( $interface )
+  {
+
+    $spaces = $this->spaces;
+
+    while ( $spaces ) {
+      $space = array_shift( $spaces );
+      $basespace = $space[0];
+      if ( 0 === strpos( $interface, $basespace ) ) {
+        return $space;
+      }
+    }
+
+  }
+
   public function autoload( $interface )
   {
 
     $collection = $this->domain;
+    $space = $this->match( $interface );
 
-    $interface = $spaces = explode( '\\', $interface );
-    array_shift( $spaces );
+    if ( ! $space ) {
+      throw new Exception;
+    }
+
+    $spaces = str_replace( $space[0] . '\\', '', $interface );
+    $spaces = explode( '\\', $spaces );
     $name = array_pop( $spaces );
-
     $collection = $collection->seek( $spaces );
 
     $file = $collection . DIRECTORY_SEPARATOR . $name . '.php';
 
     if ( DomainHelper::isReadable( $file ) ) {
-      require $file;
+      require_once $file;
     }
 
   }
@@ -69,20 +100,7 @@ class Domain
   {
 
     if ( class_exists( $interface ) ) {
-      $parameters = ( new ReflectionMethod( $interface, '__construct' ) )->getParameters();
-      $names = array_map(
-        function ( $item ) {
-          return $item->getName();
-        },
-        $parameters
-      );
-      if ( ! array_diff( $names, array_keys( $args ) ) ) {
-        throw new Exception;
-      }
-
-      $args = array_values( $this->parseArgs( $args ) );
-
-      $this->services[ $interface ] = [ $interface, $args ];
+      $this->services[ $interface ] = [ $interface, array_values( $this->parseArgs( $args ) ) ];
     }
 
   }
@@ -125,7 +143,7 @@ class Domain
       $interface = $item[0];
       $args = $item[1];
 
-      $service = $this->create( $interface, $args );
+      $service = $this->createService( $interface, $args );
 
       $item = new StdClass;
       $item->service = $service;
@@ -158,18 +176,20 @@ class Domain
 
     if ( $args ) {
       foreach ( $args as $key => $value ) {
-        $args[ $key ] = $this->get( $value );
+        if ( is_numeric( $key ) ) {
+          $args[ $key ] = $this->get( $value );
+        }
       }
     }
 
-    return [];
+    return $args;
 
   }
 
-  public function injection( $tags, $interface, $method, array $args = null )
+  public function injection( $id, $interface, $method, array $args = null )
   {
 
-    $this->items[ implode( '/', $tags ) ] = [ [ $interface, $method ], $args ];
+    $this->services[ $interface ][2][ $id ] = [ [ $interface, $method ], $args ];
 
   }
 
@@ -208,12 +228,13 @@ class Domain
 
   }
 
-  public function get( $tags )
+  public function get( $id )
   {
 
-    $id = implode( '/', $tags );
-    if ( array_key_exists( $id, $this->items ) ) {
-      $item = $this->items[ $id ];
+    foreach ( $this->services as $std ) {
+      if ( array_key_exists( $id, $std[2] ) ) {
+        return $std[2][ $id ];
+      }
     }
 
   }

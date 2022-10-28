@@ -60,14 +60,17 @@ class DomainCollection
     }
 
     while ( $iterator->valid() ) {
+      $match = false;
       while( $path = array_shift( $name ) ) {
-
         $match = $iterator->match( $path );
         if ( $match ) {
-          $iterator = $iterator->current();
-        } else {
-         $iterator->next();
+          break;
         }
+      }
+      if ( $match ) {
+        $iterator = $iterator->current();
+      } else {
+        $iterator->next();
       }
     }
 
