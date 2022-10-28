@@ -28,7 +28,7 @@ class Domain
   protected array $spaces = [];
   protected array $services = [];
 
-  protected function __construct( $collection = DomainCollection::class )
+  protected function __construct( string $collection = DomainCollection::class )
   {
 
     $this->path = $path = dirname( __FILE__ );
@@ -38,11 +38,11 @@ class Domain
 
   }
 
-  public static function getInstance()
+  public static function getInstance( string $collection = null )
   {
 
     if ( ! isset( static::$instance ) || static::$instance instanceof static ) {
-      static::$instance = new static;
+      static::$instance = new static( $collection );
     }
 
     return static::$instance;
