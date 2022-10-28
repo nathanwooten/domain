@@ -149,8 +149,7 @@ class DomainCollection
   public function __toString()
   {
 
-    $name = $this->valid() ? DIRECTORY_SEPARATOR . $this->getName() : '';
-    return $this->path . $name;
+    return $this->path;
 
   }
 
