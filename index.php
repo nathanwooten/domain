@@ -6,6 +6,12 @@ use Domain\{
 
 };
 
+use SomeVendor\{
+
+  SomeType\SomeClass
+
+};
+
 if ( ! defined( 'DEBUG' ) ) define( 'DEBUG', 1 );
 ini_set( 'display_errors', DEBUG );
 
@@ -15,6 +21,11 @@ $domain = Domain::getInstance();
 
 $domain->add( 'SomeVendor' );
 
-$domain->setService( 'SomeVendor\SomeType\SomeClass', [ 'name' => 'Nathan Wooten', 'phone' => '1-555-NOT-REAL', 'email' => 'a8gid24akl@gmail.com' ] );
-$someobject = $domain->getService( 'SomeVendor\SomeType\SomeClass' );
+$domain->set( SomeClass::class, [ 'name' => 'Nathan Wooten', 'email' => 'a8gid24akl@gmail.com' ] );
+$someobject = $domain->get( SomeClass::class );
+
+$domain->injection( 'email', SomeClass::class, 'getEmail' );
+$result = $domain->inject( 'email', SomeClass::class );
+
 var_dump( $someobject );
+var_dump( $result );

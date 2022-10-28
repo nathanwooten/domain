@@ -58,6 +58,30 @@ class Domain
 
   }
 
+  public function autoload( $interface )
+  {
+
+    $collection = $this->domain;
+    $space = $this->match( $interface );
+
+    if ( ! $space ) {
+      throw new Exception;
+    }
+
+    $spaces = str_replace( $space[0] . '\\', '', $interface );
+    $spaces = explode( '\\', $spaces );
+    $name = array_pop( $spaces );
+
+    $collection = $collection->seek( $spaces );
+
+    $file = $collection . DIRECTORY_SEPARATOR . $name . '.php';
+
+    if ( DomainHelper::isReadable( $file ) ) {
+      require_once $file;
+    }
+
+  }
+
   public function match( $interface )
   {
 
@@ -73,30 +97,7 @@ class Domain
 
   }
 
-  public function autoload( $interface )
-  {
-
-    $collection = $this->domain;
-    $space = $this->match( $interface );
-
-    if ( ! $space ) {
-      throw new Exception;
-    }
-
-    $spaces = str_replace( $space[0] . '\\', '', $interface );
-    $spaces = explode( '\\', $spaces );
-    $name = array_pop( $spaces );
-    $collection = $collection->seek( $spaces );
-
-    $file = $collection . DIRECTORY_SEPARATOR . $name . '.php';
-
-    if ( DomainHelper::isReadable( $file ) ) {
-      require_once $file;
-    }
-
-  }
-
-  public function setService( $interface, array $args = null )
+  public function set( $interface, array $args = null )
   {
 
     if ( class_exists( $interface ) ) {
@@ -105,32 +106,33 @@ class Domain
 
   }
 
-  public function getService( $interface )
+  public function get( $interface, $id = null )
   {
 
-    if ( $this->hasService( $interface ) ) {
+    if ( $this->has( $interface ) ) {
       $provider = $this->services[ $interface ];
-      if ( $provider instanceof StdClass ) {
+      if ( $provider instanceof stdClass ) {
       } else {
-         $this->loadService( ...$provider );
+         $this->load( ...$provider );
       }
     }
 
-    $provider = $this->services[ $interface ];
-    $service = $provider->service;
+    if ( ! is_null( $id ) ) {
+      return $this->inject( $id, $interface );
+    }
 
-    return $service;
+    return $this->services[ $interface ]->service;
 
   }
 
-  public function hasService( $interface )
+  public function has( $interface )
   {
 
     return array_key_exists( $interface, $this->services );
 
   }
 
-  public function loadService( $interface )
+  public function load( $interface )
   {
 
     $item = $this->services[ $interface ];
@@ -143,7 +145,7 @@ class Domain
       $interface = $item[0];
       $args = $item[1];
 
-      $service = $this->createService( $interface, $args );
+      $service = $this->create( $interface, $args );
 
       $item = new StdClass;
       $item->service = $service;
@@ -154,7 +156,7 @@ class Domain
 
   }
 
-  public function createService( $interface, $args = null )
+  public function create( $interface, $args = null )
   {
 
     $rClass = new ReflectionClass( $interface );
@@ -189,26 +191,25 @@ class Domain
   public function injection( $id, $interface, $method, array $args = null )
   {
 
-    $this->services[ $interface ][2][ $id ] = [ [ $interface, $method ], $args ];
+    $this->services[ $interface ]->injection[ $id ] = [ [ $interface, $method ], $args ];
 
   }
 
-  public function inject( $interface, $tags = [] )
+  public function inject( $id, $interface )
   {
 
-    $item = $this->get( $interface );
+    $item = $this->services[ $interface ];
 
-    $injections = $item->injections;
-    $tagstring = implode( '/', $tags );
+    $injections = $item->injection;
 
     foreach ( $injections as $string => $injection ) {
-      if ( $tagstring === $string ) {
+      if ( $id === $string ) {
         if ( $injection instanceof StdClass ) {
         } else {
           $callback = $injection[0];
           $args = $injection[1];
           if ( is_string( $callback[0] ) ) {
-            $callback[0] = $service;
+            $callback[0] = $item->service;
           }
           $result = $this->call( $callback, $args );
 
@@ -218,24 +219,21 @@ class Domain
           $injected->result = $result;
         }
         $injections[ $string ] = $injected;
+        break;
       }
     }
 
-    $item->injections = $injections;
-    $this->setItem( $tags, $item );
+    $item->injection = $injections;
+    $this->services[ $interface ] = $item;
 
-    return $item;
+    return $result;
 
   }
 
-  public function get( $id )
+  public function call( callable $callback, $args )
   {
 
-    foreach ( $this->services as $std ) {
-      if ( array_key_exists( $id, $std[2] ) ) {
-        return $std[2][ $id ];
-      }
-    }
+    return $callback( ...array_values( (array) $args ) );
 
   }
 
