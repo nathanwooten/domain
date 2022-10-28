@@ -28,11 +28,11 @@ class Domain
   protected array $spaces = [];
   protected array $services = [];
 
-  protected function __construct()
+  protected function __construct( $collection = DomainCollection::class )
   {
 
     $this->path = $path = dirname( __FILE__ );
-    $this->domain = new DomainCollection( $this );
+    $this->domain = new $collection( $this );
 
     spl_autoload_register( [ $this, 'autoload' ] );
 
