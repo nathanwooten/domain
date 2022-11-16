@@ -2,5 +2,6 @@
 
 namespace nathanwooten\Domain;
 
-interface Domain {
+interface Definition
+{
 }
