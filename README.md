@@ -1,3 +1,3 @@
-# domain/domain
+# nathanwooten/domain
 
 A simpler approach...
