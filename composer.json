@@ -1,0 +1,14 @@
+{
+  "name": "nathanwooten/domain",
+  "description": "Space based service management",
+  "license": "MIT",
+  "require": {
+    "php": ">=7.0"
+  },
+  "authors": [
+    {
+      "name": "Nathan Wooten",
+      "homepage": "https://github.com/nathanwooten/domain"
+    }
+  ]
+}
